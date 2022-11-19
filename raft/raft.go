@@ -5,14 +5,12 @@ import (
 
 	raft "github.com/adylanrff/raft-algorithm/proto"
 	"github.com/adylanrff/raft-algorithm/raft/model"
+	log "github.com/sirupsen/logrus"
 )
 
-type Entry struct {
-}
-
 type RaftServerHandler interface {
-	RequestVote(req *model.RequestVoteRequest) (*model.RequestVoteResponse, error)
-	AppendEntries(req *model.AppendEntriesRequest) (*model.AppendEntriesResponse, error)
+	RequestVote(req *model.RequestVoteRequestDTO) (*model.RequestVoteResponseDTO, error)
+	AppendEntries(req *model.AppendEntriesRequestDTO) (*model.AppendEntriesResponseDTO, error)
 }
 
 type defaultRaftServerHandler struct {
@@ -33,9 +31,29 @@ func (h *defaultRaftServerHandler) Handle(req *model.RaftMessageDTO) (resp *mode
 	return nil, errors.New("unrecognized method")
 }
 
+// AppendEntries implements RaftServerHandler
+func (*defaultRaftServerHandler) AppendEntries(req *model.AppendEntriesRequestDTO) (*model.AppendEntriesResponseDTO, error) {
+	log.WithFields(log.Fields{
+		"req":    req.AppendEntriesRequest,
+		"method": "AppendEntries",
+	}).Debug("append_entries_request_start")
+
+	return &model.AppendEntriesResponseDTO{}, nil
+}
+
+// RequestVote implements RaftServerHandler
+func (*defaultRaftServerHandler) RequestVote(req *model.RequestVoteRequestDTO) (*model.RequestVoteResponseDTO, error) {
+	log.WithFields(log.Fields{
+		"req":    req.RequestVoteRequest,
+		"method": "RequestVote",
+	}).Debug("request_vote_request_start")
+
+	return &model.RequestVoteResponseDTO{}, nil
+}
+
 func (h *defaultRaftServerHandler) handleAppendEntries(req *model.RaftMessageDTO) (resp *model.RaftMessageDTO, err error) {
 	raftReq := req.GetRaftRequest()
-	appendEntriesReq := &model.AppendEntriesRequest{
+	appendEntriesReq := &model.AppendEntriesRequestDTO{
 		AppendEntriesRequest: raftReq.GetAppendEntriesRequest(),
 	}
 
@@ -60,7 +78,7 @@ func (h *defaultRaftServerHandler) handleAppendEntries(req *model.RaftMessageDTO
 
 func (h *defaultRaftServerHandler) handleRequestVote(req *model.RaftMessageDTO) (resp *model.RaftMessageDTO, err error) {
 	raftReq := req.GetRaftRequest()
-	requestVoteReq := &model.RequestVoteRequest{
+	requestVoteReq := &model.RequestVoteRequestDTO{
 		RequestVoteRequest: raftReq.GetRequestVoteRequest(),
 	}
 
@@ -81,14 +99,4 @@ func (h *defaultRaftServerHandler) handleRequestVote(req *model.RaftMessageDTO) 
 	err = requestVoteErr
 
 	return
-}
-
-// AppendEntries implements RaftServerHandler
-func (*defaultRaftServerHandler) AppendEntries(req *model.AppendEntriesRequest) (*model.AppendEntriesResponse, error) {
-	panic("unimplemented")
-}
-
-// RequestVote implements RaftServerHandler
-func (*defaultRaftServerHandler) RequestVote(req *model.RequestVoteRequest) (*model.RequestVoteResponse, error) {
-	panic("unimplemented")
 }
