@@ -2,10 +2,10 @@ package model
 
 import raft "github.com/adylanrff/raft-algorithm/proto"
 
-type AppendEntriesRequest struct {
+type AppendEntriesRequestDTO struct {
 	*raft.AppendEntriesRequest
 }
 
-type AppendEntriesResponse struct {
+type AppendEntriesResponseDTO struct {
 	*raft.AppendEntriesResponse
 }

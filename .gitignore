@@ -21,3 +21,4 @@ Created .gitignore file for flag type go.
 # Go workspace file
 go.work
 bin
+*.log
