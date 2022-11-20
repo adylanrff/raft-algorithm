@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 
@@ -13,29 +12,29 @@ type Handler func(req *ServerMessageDTO) (resp *ServerMessageDTO, err error)
 
 // Server - implements the raft server
 type Server struct {
-	port     int
+	address  string
 	Handlers map[string]Handler
 
 	Parse func(reader io.Reader) (req *ServerMessageDTO, err error)
 }
 
-func NewServer(port int) *Server {
+func NewServer(address string) *Server {
 	return &Server{
-		port:     port,
+		address:  address,
 		Parse:    ParseServerMessage,
 		Handlers: make(map[string]Handler),
 	}
 }
 
 func (s *Server) Run() {
-	srv, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", s.port))
+	srv, err := net.Listen("tcp", s.address)
 	if err != nil {
 		panic(err)
 	}
 	defer srv.Close()
 
 	log.WithFields(log.Fields{
-		"port": s.port,
+		"address": s.address,
 	}).Info("running server")
 
 	for {
