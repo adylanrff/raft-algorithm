@@ -28,5 +28,11 @@ message ServerResponse {
   oneof response {
     RequestVoteResponse request_vote_response = 1;
     AppendEntriesResponse append_entries_response = 2;
+    ErrorResponse error_response = 3;
   }
+}
+
+message ErrorResponse {
+  int32 error_code = 1;
+  string error_msg = 2;
 }
