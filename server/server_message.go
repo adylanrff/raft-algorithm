@@ -17,3 +17,28 @@ func (dto *ServerMessageDTO) ToBytes() ([]byte, error) {
 
 	return append([]byte{byte(len(marshalledMessage))}, marshalledMessage...), nil
 }
+
+type ErrorServerMessageDTO struct {
+	*ServerMessageDTO
+}
+
+func NewErrorMessageDTO(errorCode int32, errorMsg string) *ErrorServerMessageDTO {
+	errorResponse := &serverPb.ErrorResponse{
+		ErrorCode: errorCode,
+		ErrorMsg:  errorMsg,
+	}
+
+	return &ErrorServerMessageDTO{
+		ServerMessageDTO: &ServerMessageDTO{
+			ServerMessage: &serverPb.ServerMessage{
+				Payload: &serverPb.ServerMessage_ServerResponse{
+					ServerResponse: &serverPb.ServerResponse{
+						Response: &serverPb.ServerResponse_ErrorResponse{
+							ErrorResponse: errorResponse,
+						},
+					},
+				},
+			},
+		},
+	}
+}

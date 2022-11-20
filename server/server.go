@@ -60,6 +60,34 @@ func (s *Server) handleConn(conn net.Conn) error {
 		msg *ServerMessageDTO
 	)
 
+	defer func() {
+		// TODO: use better way, create ErrorDTO
+		if err != nil {
+			errorServerMessageDTO := NewErrorMessageDTO(-1, err.Error())
+			errorServerMessageBytes, convErr := errorServerMessageDTO.ToBytes()
+			if convErr != nil {
+				log.WithFields(
+					log.Fields{
+						"errorDTO": errorServerMessageDTO,
+						"err":      convErr,
+					}).Error("convert error")
+
+				errBytes := []byte(convErr.Error())
+				msg := append([]byte{byte(len(errBytes))}, errBytes...)
+				_, err = conn.Write(msg)
+				if err != nil {
+					log.WithFields(
+						log.Fields{
+							"errorDTO": errorServerMessageDTO,
+							"err":      convErr,
+						}).Error("write error")
+				}
+				return
+			}
+			conn.Write(errorServerMessageBytes)
+		}
+	}()
+
 	msg, err = s.Parse(conn)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("parse message error")
