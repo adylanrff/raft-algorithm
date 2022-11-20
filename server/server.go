@@ -21,8 +21,9 @@ type Server struct {
 
 func NewServer(port int) *Server {
 	return &Server{
-		port:  port,
-		Parse: ParseServerMessage,
+		port:     port,
+		Parse:    ParseServerMessage,
+		Handlers: make(map[string]Handler),
 	}
 }
 
