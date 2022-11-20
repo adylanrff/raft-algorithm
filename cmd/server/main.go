@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/adylanrff/raft-algorithm/raft"
-	"github.com/adylanrff/raft-algorithm/server"
+	"github.com/adylanrff/raft-algorithm/rpc"
 	"github.com/adylanrff/raft-algorithm/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,6 +18,8 @@ var logPath string
 func init() {
 	flag.IntVar(&port, "port", 8000, "server port")
 	flag.StringVar(&logPath, "log_path", "server.log", "log path")
+
+	flag.Parse()
 }
 
 func main() {
@@ -38,7 +40,7 @@ func main() {
 
 	raftServerHandler := raft.NewRaftServerhandler(raftHandler)
 
-	server := server.NewServer(address)
+	server := rpc.NewServer(address)
 	server.AddHandler(raft.RaftMethodName_RequestVotes, raftServerHandler.RequestVoteHandler)
 	server.AddHandler(raft.RaftMethodName_AppendEntries, raftServerHandler.AppendEntriesHandler)
 
