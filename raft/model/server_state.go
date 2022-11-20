@@ -14,7 +14,7 @@ type RaftState struct {
 	ID          string
 	CurrentTerm int32
 	VotedFor    string // CandidateID for the current term election
-	Log         []RaftLog
+	Logs        []RaftLog
 	Role        RaftRole
 
 	// volatile state
@@ -50,7 +50,7 @@ func NewRaftState(id string) RaftState {
 		ID:          id,
 		CurrentTerm: 0,
 		VotedFor:    "",
-		Log:         make([]RaftLog, 0),
+		Logs:        make([]RaftLog, 0),
 		Role:        RaftRoleFollower,
 
 		CommitIndex: 0,
@@ -63,7 +63,9 @@ func NewRaftState(id string) RaftState {
 }
 
 // RaftLog
-type RaftLog struct{}
+type RaftLog struct {
+	Term int32
+}
 
 // RaftRole
 type RaftRole int32

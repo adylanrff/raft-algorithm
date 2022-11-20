@@ -6,6 +6,21 @@ type RequestVoteRequestDTO struct {
 	*raftPb.RequestVoteRequest
 }
 
+func NewRequestVoteRequestDTO(
+	term int32,
+	candidateID string,
+	lastLogIndex int32,
+	lastLogTerm int32) *RequestVoteRequestDTO {
+	return &RequestVoteRequestDTO{
+		RequestVoteRequest: &raftPb.RequestVoteRequest{
+			Term:         term,
+			CandidateId:  candidateID,
+			LastLogIndex: lastLogIndex,
+			LastLogTerm:  int32(lastLogTerm),
+		},
+	}
+}
+
 type RequestVoteResponseDTO struct {
 	*raftPb.RequestVoteResponse
 }

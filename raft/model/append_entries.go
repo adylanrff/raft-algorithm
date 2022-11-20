@@ -6,6 +6,12 @@ type AppendEntriesRequestDTO struct {
 	*raftPb.AppendEntriesRequest
 }
 
+func NewAppendEntriesRequestDTO() *AppendEntriesRequestDTO {
+	return &AppendEntriesRequestDTO{
+		AppendEntriesRequest: &raftPb.AppendEntriesRequest{},
+	}
+}
+
 type AppendEntriesResponseDTO struct {
 	*raftPb.AppendEntriesResponse
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -20,6 +21,7 @@ func init() {
 	flag.StringVar(&logPath, "log_path", "server.log", "log path")
 
 	flag.Parse()
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
@@ -28,13 +30,15 @@ func main() {
 	address := fmt.Sprintf("127.0.0.1:%d", port)
 	serverID := raft.GetRaftServerIDFromAddress(address)
 
-	raftHandler := raft.NewRaft(serverID, raft.RaftConfig{
-		ElectionTimeout:   500 * time.Millisecond,
-		HeartbeatInterval: 200 * time.Millisecond,
+	raftHandler := raft.NewRaft(serverID, address, raft.RaftConfig{
+		ElectionTimeout:   1000 * time.Millisecond,
+		HeartbeatInterval: 500 * time.Millisecond,
 		ClusterMemberAddreses: []string{
 			"127.0.0.1:8000",
 			"127.0.0.1:8001",
 			"127.0.0.1:8002",
+			"127.0.0.1:8003",
+			"127.0.0.1:8004",
 		},
 	})
 
@@ -49,13 +53,11 @@ func main() {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-
 		server.Run()
 	}()
 
 	go func() {
 		defer wg.Done()
-
 		raftHandler.Run()
 	}()
 
