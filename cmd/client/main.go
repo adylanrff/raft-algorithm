@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net"
 
-	pb "github.com/adylanrff/raft-algorithm/proto"
+	raftPb "github.com/adylanrff/raft-algorithm/proto/raft"
+	serverPb "github.com/adylanrff/raft-algorithm/proto/server"
 	"github.com/adylanrff/raft-algorithm/raft"
-	"github.com/adylanrff/raft-algorithm/raft/model"
+	"github.com/adylanrff/raft-algorithm/server"
 	"github.com/adylanrff/raft-algorithm/util"
 )
 
@@ -22,14 +23,13 @@ func init() {
 func main() {
 	util.InitLogger(logPath)
 
-	raftMsg := model.RaftMessageDTO{
-		RaftMessage: &pb.RaftMessage{
-			Method:          raft.RaftMethodName_RequestVotes,
-			RaftMessageType: pb.RaftMessageType_RaftMessageType_RaftRequest,
-			Payload: &pb.RaftMessage_RaftRequest{
-				RaftRequest: &pb.RaftRequest{
-					Request: &pb.RaftRequest_RequestVoteRequest{
-						RequestVoteRequest: &pb.RequestVoteRequest{},
+	raftMsg := server.ServerMessageDTO{
+		ServerMessage: &serverPb.ServerMessage{
+			Method: raft.RaftMethodName_RequestVotes,
+			Payload: &serverPb.ServerMessage_ServerRequest{
+				ServerRequest: &serverPb.ServerRequest{
+					Request: &serverPb.ServerRequest_RequestVoteRequest{
+						RequestVoteRequest: &raftPb.RequestVoteRequest{},
 					},
 				},
 			},
@@ -52,7 +52,7 @@ func main() {
 		panic(err)
 	}
 
-	raftMsgDTO, err := raft.ParseRaftMessage(conn)
+	raftMsgDTO, err := server.ParseServerMessage(conn)
 	if err != nil {
 		panic(err)
 	}

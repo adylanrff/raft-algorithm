@@ -1,22 +1,21 @@
-package raft
+package server
 
 import (
 	"errors"
 	"io"
 
-	raft "github.com/adylanrff/raft-algorithm/proto"
-	"github.com/adylanrff/raft-algorithm/raft/model"
+	serverPb "github.com/adylanrff/raft-algorithm/proto/server"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/proto"
 )
 
-func ParseRaftMessage(reader io.Reader) (*model.RaftMessageDTO, error) {
+func ParseServerMessage(reader io.Reader) (*ServerMessageDTO, error) {
 	byteSize, err := readByteSize(reader)
 	if err != nil {
 		return nil, err
 	}
 
-	return readRaftMessage(reader, byteSize)
+	return readServerMessage(reader, byteSize)
 }
 
 func readByteSize(reader io.Reader) (int, error) {
@@ -36,7 +35,7 @@ func readByteSize(reader io.Reader) (int, error) {
 	return byteSize, nil
 }
 
-func readRaftMessage(reader io.Reader, byteSize int) (*model.RaftMessageDTO, error) {
+func readServerMessage(reader io.Reader, byteSize int) (*ServerMessageDTO, error) {
 	messageBuf := make([]byte, byteSize)
 	n, err := reader.Read(messageBuf)
 	if err != nil {
@@ -57,14 +56,14 @@ func readRaftMessage(reader io.Reader, byteSize int) (*model.RaftMessageDTO, err
 		return nil, errors.New("unexpected byte size")
 	}
 
-	var raftMessage raft.RaftMessage
+	var serverMessage serverPb.ServerMessage
 
-	err = proto.Unmarshal(messageBuf[:n], &raftMessage)
+	err = proto.Unmarshal(messageBuf[:n], &serverMessage)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.RaftMessageDTO{
-		RaftMessage: &raftMessage,
+	return &ServerMessageDTO{
+		ServerMessage: &serverMessage,
 	}, nil
 }

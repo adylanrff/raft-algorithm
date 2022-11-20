@@ -1,27 +1,28 @@
-package raft
+package server
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
 
-	"github.com/adylanrff/raft-algorithm/raft/model"
 	log "github.com/sirupsen/logrus"
 )
 
+type Handler func(req *ServerMessageDTO) (resp *ServerMessageDTO, err error)
+
 // Server - implements the raft server
 type Server struct {
-	port int
+	port     int
+	Handlers map[string]Handler
 
-	Parse   func(reader io.Reader) (req *model.RaftMessageDTO, err error)
-	Handler func(req *model.RaftMessageDTO) (resp *model.RaftMessageDTO, err error)
+	Parse func(reader io.Reader) (req *ServerMessageDTO, err error)
 }
 
 func NewServer(port int) *Server {
 	return &Server{
-		port:    port,
-		Parse:   ParseRaftMessage,
-		Handler: NewRaftServerHandler().Handle,
+		port:  port,
+		Parse: ParseServerMessage,
 	}
 }
 
@@ -48,10 +49,14 @@ func (s *Server) Run() {
 	}
 }
 
+func (s *Server) AddHandler(method string, handler Handler) {
+	s.Handlers[method] = handler
+}
+
 func (s *Server) handleConn(conn net.Conn) error {
 	var (
 		err error
-		msg *model.RaftMessageDTO
+		msg *ServerMessageDTO
 	)
 
 	msg, err = s.Parse(conn)
@@ -60,7 +65,7 @@ func (s *Server) handleConn(conn net.Conn) error {
 		return err
 	}
 
-	resp, err := s.Handler(msg)
+	resp, err := s.handleMsg(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("handle error")
 		return err
@@ -83,4 +88,14 @@ func (s *Server) handleConn(conn net.Conn) error {
 	}).Debug("write response")
 
 	return err
+}
+
+func (s *Server) handleMsg(msg *ServerMessageDTO) (resp *ServerMessageDTO, err error) {
+	method := msg.GetMethod()
+	handler, ok := s.Handlers[method]
+	if !ok {
+		return nil, errors.New("unrecognized methods")
+	}
+
+	return handler(msg)
 }

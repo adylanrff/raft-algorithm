@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/adylanrff/raft-algorithm/raft"
+	"github.com/adylanrff/raft-algorithm/server"
 	"github.com/adylanrff/raft-algorithm/util"
 )
 
@@ -18,6 +19,7 @@ func init() {
 func main() {
 	util.InitLogger(logPath)
 
-	raftServer := raft.NewServer(port)
+	raftServer := server.NewServer(port)
+	raftServer.AddHandler(raft.RaftMethodName_RequestVotes, func(req *server.ServerMessageDTO) (resp *server.ServerMessageDTO, err error) {})
 	raftServer.Run()
 }
