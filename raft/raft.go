@@ -155,7 +155,10 @@ func (r *defaultRaft) doCandidateAction() {
 			electionChan <- struct{}{}
 		case <-r.appendEntriesSignal:
 			log.WithFields(log.Fields{}).Infof("heartbeat received")
+			r.state.Lock()
 			r.state.ChangeRole(model.RaftRoleFollower)
+			r.state.VotedFor = ""
+			r.state.Unlock()
 			return
 		case <-electionChan:
 			log.WithFields(log.Fields{}).Infof("do election")
