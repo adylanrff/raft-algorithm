@@ -15,7 +15,7 @@ type defaultRpcClient struct {
 func (*defaultRpcClient) Call(address string, payload *ServerMessageDTO) (resp *ServerMessageDTO, err error) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer conn.Close()
 
