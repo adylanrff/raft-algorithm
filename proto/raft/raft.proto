@@ -1,0 +1,12 @@
+syntax = "proto3";
+option go_package = "github.com/adylanrff/raft-algorithm/proto/raft";
+
+// RequestVote Method
+message RequestVoteRequest {}
+
+message RequestVoteResponse {}
+
+// AppendEntries Method
+message AppendEntriesRequest {}
+
+message AppendEntriesResponse {}

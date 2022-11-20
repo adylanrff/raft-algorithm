@@ -1,0 +1,32 @@
+syntax = "proto3";
+option go_package = "github.com/adylanrff/raft-algorithm/proto/server";
+
+import "raft/raft.proto";
+
+enum ServerMessageType {
+  ServerMessageType_Unknown = 0;
+  ServerMessageType_ServerRequest = 1;
+  ServerMessageType_ServerResponse = 2;
+}
+
+message ServerMessage {
+  string method = 1;
+  oneof payload {
+    ServerRequest server_request = 3;
+    ServerResponse server_response = 4;
+  }
+}
+
+message ServerRequest {
+  oneof request {
+    RequestVoteRequest request_vote_request = 1;
+    AppendEntriesRequest append_entries_request = 2;
+  }
+}
+
+message ServerResponse {
+  oneof response {
+    RequestVoteResponse request_vote_response = 1;
+    AppendEntriesResponse append_entries_response = 2;
+  }
+}

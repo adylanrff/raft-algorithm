@@ -1,11 +1,11 @@
 package model
 
-import raft "github.com/adylanrff/raft-algorithm/proto"
+import raftPb "github.com/adylanrff/raft-algorithm/proto/raft"
 
 type RequestVoteRequestDTO struct {
-	*raft.RequestVoteRequest
+	*raftPb.RequestVoteRequest
 }
 
 type RequestVoteResponseDTO struct {
-	*raft.RequestVoteResponse
+	*raftPb.RequestVoteResponse
 }
