@@ -1,8 +1,8 @@
 all: server client
 
 update-proto:
-	protoc --proto_path=./proto --go_out=proto --go_opt=paths=source_relative raft/raft.proto
-	protoc --proto_path=./proto --go_out=proto --go_opt=paths=source_relative server/server.proto
+	protoc --proto_path=./proto --go_out=proto/raft --go_opt=paths=source_relative raft.proto
+	protoc --proto_path=./proto --go_out=proto/server --go_opt=paths=source_relative server.proto
 
 
 server:
