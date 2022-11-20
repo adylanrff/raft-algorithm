@@ -19,7 +19,12 @@ func init() {
 func main() {
 	util.InitLogger(logPath)
 
-	raftServer := server.NewServer(port)
-	raftServer.AddHandler(raft.RaftMethodName_RequestVotes, func(req *server.ServerMessageDTO) (resp *server.ServerMessageDTO, err error) {})
-	raftServer.Run()
+	server := server.NewServer(port)
+
+	raftHandler := raft.NewRaftHandler()
+	raftServerHandler := raft.NewRaftServerhandler(raftHandler)
+
+	server.AddHandler(raft.RaftMethodName_RequestVotes, raftServerHandler.RequestVoteHandler)
+	server.AddHandler(raft.RaftMethodName_AppendEntries, raftServerHandler.AppendEntriesHandler)
+	server.Run()
 }

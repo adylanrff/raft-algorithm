@@ -12,7 +12,13 @@ import (
 // perhaps codegen would be a good way (just like what grpc do)
 
 type RaftServerHandler struct {
-	raft Raft
+	raftHandler Raft
+}
+
+func NewRaftServerhandler(raftHandler Raft) *RaftServerHandler {
+	return &RaftServerHandler{
+		raftHandler: raftHandler,
+	}
 }
 
 func (h *RaftServerHandler) AppendEntriesHandler(req *server.ServerMessageDTO) (resp *server.ServerMessageDTO, err error) {
@@ -20,7 +26,7 @@ func (h *RaftServerHandler) AppendEntriesHandler(req *server.ServerMessageDTO) (
 		AppendEntriesRequest: req.GetServerRequest().GetAppendEntriesRequest(),
 	}
 
-	appendEntriesResp, appendEntriesErr := h.raft.AppendEntries(appendEntriesDTO)
+	appendEntriesResp, appendEntriesErr := h.raftHandler.AppendEntries(appendEntriesDTO)
 
 	resp = &server.ServerMessageDTO{
 		ServerMessage: &serverPb.ServerMessage{
@@ -45,7 +51,7 @@ func (h *RaftServerHandler) RequestVoteHandler(req *server.ServerMessageDTO) (re
 		RequestVoteRequest: req.GetServerRequest().GetRequestVoteRequest(),
 	}
 
-	requestVoteResp, requestVoteErr := h.raft.RequestVote(requestVoteDTO)
+	requestVoteResp, requestVoteErr := h.raftHandler.RequestVote(requestVoteDTO)
 	resp = &server.ServerMessageDTO{
 		ServerMessage: &serverPb.ServerMessage{
 			Method: req.GetMethod(),
