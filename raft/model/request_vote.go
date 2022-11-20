@@ -9,3 +9,12 @@ type RequestVoteRequestDTO struct {
 type RequestVoteResponseDTO struct {
 	*raftPb.RequestVoteResponse
 }
+
+func NewRequestVoteResponseDTO(term int32, voteGranted bool) *RequestVoteResponseDTO {
+	return &RequestVoteResponseDTO{
+		RequestVoteResponse: &raftPb.RequestVoteResponse{
+			Term:        term,
+			VoteGranted: voteGranted,
+		},
+	}
+}
