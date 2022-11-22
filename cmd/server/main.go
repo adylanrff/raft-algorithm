@@ -31,8 +31,8 @@ func main() {
 	serverID := raft.GetRaftServerIDFromAddress(address)
 
 	raftHandler := raft.NewRaft(serverID, address, raft.RaftConfig{
-		ElectionTimeout:   1000 * time.Millisecond,
-		HeartbeatInterval: 500 * time.Millisecond,
+		ElectionTimeout: 1000 * time.Millisecond,
+		IdleTimeout:     500 * time.Millisecond,
 		ClusterMemberAddreses: []string{
 			"127.0.0.1:8000",
 			"127.0.0.1:8001",

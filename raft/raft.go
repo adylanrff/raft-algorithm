@@ -1,7 +1,6 @@
 package raft
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -20,28 +19,24 @@ type defaultRaft struct {
 	state   model.RaftState
 	config  RaftConfig
 
-	// timer
-	electionTimer   *time.Timer
-	heartbeatTicker *time.Ticker
-
 	raftClient RaftClient
 
-	appendEntriesSignal chan struct{}
+	receiveAppendEntriesSignal chan struct{}
+	sendAppendEntriesSignal    chan struct{}
 }
 
 func NewRaft(id string, address string, cfg RaftConfig) *defaultRaft {
 	electionTimeout := rand.Intn(int(cfg.ElectionTimeout*2)-int(cfg.ElectionTimeout)) + int(cfg.ElectionTimeout)
 	cfg.ElectionTimeout = time.Duration(electionTimeout)
 
-	fmt.Println(electionTimeout)
 	return &defaultRaft{
-		address:       address,
-		state:         model.NewRaftState(id),
-		config:        cfg,
-		electionTimer: time.NewTimer(cfg.ElectionTimeout),
-		raftClient:    NewRaftClient(rpc.NewRPCClient()),
+		address:    address,
+		state:      model.NewRaftState(id),
+		config:     cfg,
+		raftClient: NewRaftClient(rpc.NewRPCClient()),
 
-		appendEntriesSignal: make(chan struct{}),
+		receiveAppendEntriesSignal: make(chan struct{}),
+		sendAppendEntriesSignal:    make(chan struct{}),
 	}
 }
 
@@ -96,7 +91,7 @@ func (r *defaultRaft) AppendEntries(req *model.AppendEntriesRequestDTO) (*model.
 	}).Debug("append_entries_request_start")
 
 	// received a heartbeat
-	r.appendEntriesSignal <- struct{}{}
+	r.receiveAppendEntriesSignal <- struct{}{}
 	return &model.AppendEntriesResponseDTO{}, nil
 }
 
@@ -126,7 +121,7 @@ func (r *defaultRaft) doFollowerAction() {
 			// should not happen because the only thread that modifies the state.role is this thread
 			r.state.ChangeRole(model.RaftRoleCandidate)
 			return
-		case <-r.appendEntriesSignal:
+		case <-r.receiveAppendEntriesSignal:
 			log.Debug("append entries received")
 		}
 	}
@@ -155,7 +150,7 @@ func (r *defaultRaft) doCandidateAction() {
 			log.WithFields(log.Fields{}).Infof("election timeout")
 			// do another election
 			return
-		case <-r.appendEntriesSignal:
+		case <-r.receiveAppendEntriesSignal:
 			log.WithFields(log.Fields{}).Infof("heartbeat received")
 			r.state.Lock()
 			r.state.ChangeRole(model.RaftRoleFollower)
@@ -213,12 +208,17 @@ func (r *defaultRaft) doElection() chan *model.RequestVoteResponseDTO {
 
 func (r *defaultRaft) doLeaderAction() {
 	log.WithFields(log.Fields{}).Infof("do leader action start")
-	r.heartbeatTicker = time.NewTicker(r.config.HeartbeatInterval)
 
-	for range r.heartbeatTicker.C {
-		for _, memberAddress := range r.config.ClusterMemberAddreses {
-			if memberAddress != r.address {
-				go r.raftClient.AppendEntries(memberAddress, model.NewAppendEntriesRequestDTO())
+	for {
+		select {
+		case <-r.sendAppendEntriesSignal:
+			log.Debug("append entries sent")
+		case <-time.After(r.config.IdleTimeout):
+			log.Debug("idle timeout")
+			for _, memberAddress := range r.config.ClusterMemberAddreses {
+				if memberAddress != r.address {
+					go r.raftClient.AppendEntries(memberAddress, model.NewAppendEntriesRequestDTO())
+				}
 			}
 		}
 	}
@@ -239,10 +239,4 @@ func (r *defaultRaft) watcher() {
 			}).Debug("raft node status")
 		}
 	}
-}
-
-func (r *defaultRaft) resetElectionTimer() {
-	log.WithFields(log.Fields{}).Infof("reset election timer")
-
-	r.electionTimer.Reset(r.config.ElectionTimeout)
 }
