@@ -2,10 +2,7 @@ package raft
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/adylanrff/raft-algorithm/raft/model"
@@ -123,36 +120,41 @@ func (r *defaultRaft) doFollowerAction() {
 
 	for {
 		select {
-		case <-r.electionTimer.C:
+		case <-time.After(r.config.ElectionTimeout):
 			// be a candidate
 			// TODO: fix race condition possibilities,
 			// should not happen because the only thread that modifies the state.role is this thread
 			r.state.ChangeRole(model.RaftRoleCandidate)
 			return
 		case <-r.appendEntriesSignal:
-			log.Debug("heartbeat received")
-			// reset election timeout
-			r.resetElectionTimer()
-			continue
+			log.Debug("append entries received")
 		}
 	}
 }
 
 func (r *defaultRaft) doCandidateAction() {
 	log.WithFields(log.Fields{}).Infof("do candidate action startzzz")
-	electionChan := make(chan struct{}, 1)
-	electionChan <- struct{}{}
+
+	votes := 1
+	majority := len(r.config.ClusterMemberAddreses) / 2
 
 	log.WithFields(log.Fields{}).Infof("do candidate action send election")
+	voteRespChan := r.doElection()
 
 	for {
 		select {
-		case <-r.electionTimer.C:
-			log.WithFields(log.Fields{}).Infof("reset election timer")
-			// reset election timer
-			r.resetElectionTimer()
+		case resp, ok := <-voteRespChan:
+			if ok && resp.VoteGranted {
+				votes++
+			}
+			if votes > majority {
+				r.state.ChangeRole(model.RaftRoleLeader)
+				return
+			}
+		case <-time.After(r.config.ElectionTimeout):
+			log.WithFields(log.Fields{}).Infof("election timeout")
 			// do another election
-			electionChan <- struct{}{}
+			return
 		case <-r.appendEntriesSignal:
 			log.WithFields(log.Fields{}).Infof("heartbeat received")
 			r.state.Lock()
@@ -160,17 +162,11 @@ func (r *defaultRaft) doCandidateAction() {
 			r.state.VotedFor = ""
 			r.state.Unlock()
 			return
-		case <-electionChan:
-			log.WithFields(log.Fields{}).Infof("do election")
-			shouldReturn := r.doElection()
-			if shouldReturn {
-				return
-			}
 		}
 	}
 }
 
-func (r *defaultRaft) doElection() bool {
+func (r *defaultRaft) doElection() chan *model.RequestVoteResponseDTO {
 	log.WithFields(log.Fields{}).Infof("do election start")
 
 	r.state.Lock()
@@ -180,12 +176,6 @@ func (r *defaultRaft) doElection() bool {
 	r.state.CurrentTerm++
 	// 2. vote for self
 	r.state.VotedFor = r.state.ID
-	// 3. reset election timer
-	r.resetElectionTimer()
-	// calculate majority:
-	majority := math.Ceil(float64(len(r.config.ClusterMemberAddreses)) / float64(2))
-	// 1 because we voted for ourselves
-	var votes int32 = 1
 
 	// Do voting
 	log.WithFields(log.Fields{}).Infof("do voting")
@@ -197,12 +187,9 @@ func (r *defaultRaft) doElection() bool {
 
 	voteRespChan := make(chan *model.RequestVoteResponseDTO, len(r.config.ClusterMemberAddreses))
 
-	var wg sync.WaitGroup
 	for _, memberAddress := range r.config.ClusterMemberAddreses {
 		if memberAddress != r.address {
-			wg.Add(1)
 			go func(memberAddress string) {
-				defer wg.Done()
 				resp, err := r.raftClient.RequestVote(memberAddress, requestVoteReq)
 				if err != nil {
 					log.WithFields(log.Fields{
@@ -221,38 +208,7 @@ func (r *defaultRaft) doElection() bool {
 		}
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		voteSeen := 0
-		for voteResp := range voteRespChan {
-			voteSeen++
-			if voteResp.VoteGranted {
-				atomic.AddInt32(&votes, 1)
-			}
-			if voteSeen == len(r.config.ClusterMemberAddreses)-1 {
-				return
-			}
-		}
-	}()
-
-	wg.Wait()
-
-	log.WithFields(log.Fields{
-		"id":             r.state.ID,
-		"voting_result":  votes,
-		"majority":       majority,
-		"will_be_leader": votes >= int32(majority),
-		"term":           r.state.CurrentTerm,
-	}).Infof("voting result")
-
-	if votes >= int32(majority) {
-		r.state.ChangeRole(model.RaftRoleLeader)
-		return true
-	}
-
-	return false
+	return voteRespChan
 }
 
 func (r *defaultRaft) doLeaderAction() {
